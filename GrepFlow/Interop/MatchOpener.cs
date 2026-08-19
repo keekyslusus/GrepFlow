@@ -21,7 +21,7 @@ public sealed class MatchOpener : IMatchOpener
     private readonly FileOpenSafetyPolicy _safetyPolicy;
     private readonly IExecutableFileOpener _genericExecutableOpener;
     private readonly IFileOpener _textScriptFallback;
-    private readonly IFileOpener _fallback;
+    private readonly ISafeFileOpener _safeFileOpener;
 
     public MatchOpener(
         IFileAssociationResolver associations,
@@ -29,14 +29,14 @@ public sealed class MatchOpener : IMatchOpener
         FileOpenSafetyPolicy safetyPolicy,
         IExecutableFileOpener genericExecutableOpener,
         IFileOpener textScriptFallback,
-        IFileOpener fallback)
+        ISafeFileOpener safeFileOpener)
     {
         _associations = associations;
         _associatedLaunchers = associatedLaunchers;
         _safetyPolicy = safetyPolicy;
         _genericExecutableOpener = genericExecutableOpener;
         _textScriptFallback = textScriptFallback;
-        _fallback = fallback;
+        _safeFileOpener = safeFileOpener;
     }
 
     public MatchOpenOutcome Open(RipgrepMatch match)
@@ -61,8 +61,12 @@ public sealed class MatchOpener : IMatchOpener
             return MatchOpenOutcome.Opened;
         }
 
-        _fallback.Open(match.AbsolutePath);
-        return MatchOpenOutcome.OpenWithShown;
+        return _safeFileOpener.OpenSafe(match.AbsolutePath) switch
+        {
+            SafeFileOpenOutcome.Opened => MatchOpenOutcome.Opened,
+            SafeFileOpenOutcome.OpenWithShown => MatchOpenOutcome.OpenWithShown,
+            _ => throw new InvalidOperationException("Unknown safe file open outcome."),
+        };
     }
 
     private bool TryOpenWithAssociatedEditor(string associationPath, RipgrepMatch match)

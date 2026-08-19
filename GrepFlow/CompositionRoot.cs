@@ -151,7 +151,9 @@ public static class CompositionRoot
             new FileOpenSafetyPolicy(),
             new ExecutableFileOpener(processStarter),
             new NotepadFileOpener(processStarter),
-            new OpenWithFileOpener(processStarter));
+            new SafeFileOpener(
+                new ShellFileOpener(processStarter),
+                new OpenWithDialogFileOpener(new WindowsOpenWithDialogNative())));
         var resultActionHost = new ResultActionHost(
             (directory, path) => api.OpenDirectory(directory, path),
             text => api.CopyToClipboard(text),

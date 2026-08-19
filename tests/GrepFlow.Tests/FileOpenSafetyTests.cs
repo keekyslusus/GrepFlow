@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using GrepFlow.Interop;
 using GrepFlow.Presentation;
@@ -49,6 +50,7 @@ public sealed class FileOpenSafetyTests
     }
 
     [Theory]
+    [InlineData("file.log")]
     [InlineData("file.cs")]
     [InlineData("file.txt")]
     [InlineData("README")]
@@ -90,7 +92,9 @@ public sealed class FileOpenSafetyTests
             new FileOpenSafetyPolicy(),
             new NeverExecutableFileOpener(),
             new NotepadFileOpener(processes),
-            new OpenWithFileOpener(processes));
+            new SafeFileOpener(
+                new ShellFileOpener(processes),
+                new RecordingFileOpener()));
 
         var outcome = opener.Open(CreateMatch(path));
 
@@ -99,37 +103,102 @@ public sealed class FileOpenSafetyTests
     }
 
     [Theory]
+    [InlineData(@"C:\source\plugin.log")]
     [InlineData(@"C:\source\file.cs")]
     [InlineData(@"C:\source\notes.txt")]
     [InlineData(@"C:\source\README")]
-    public void UnknownSafeMatchUsesOpenWithFallback(string path)
+    public void UnknownSafeMatchUsesDefaultOpen(string path)
     {
         var fallback = new RecordingFileOpener();
         var opener = CreateMatchOpener(fallback);
 
         var outcome = opener.Open(CreateMatch(path));
 
-        Assert.Equal(MatchOpenOutcome.OpenWithShown, outcome);
+        Assert.Equal(MatchOpenOutcome.Opened, outcome);
         Assert.Equal(path, fallback.OpenedPath);
     }
 
     [Theory]
+    [InlineData(@"C:\source\plugin.log")]
+    [InlineData(@"C:\source\file.cs")]
     [InlineData(@"C:\path with spaces\file.txt")]
     [InlineData(@"C:\source\-leading-dash.txt")]
     [InlineData(@"C:\source\README")]
-    public void OpenWithUsesExplicitVerbAndKeepsPathStructured(string path)
+    public void ShellOpenUsesDefaultVerbAndKeepsPathStructured(string path)
     {
         var processes = new RecordingProcessStarter();
-        var opener = new OpenWithFileOpener(processes);
+        var opener = new ShellFileOpener(processes);
 
         opener.Open(path);
 
         Assert.NotNull(processes.StartInfo);
         Assert.Equal(path, processes.StartInfo.FileName);
         Assert.True(processes.StartInfo.UseShellExecute);
-        Assert.Equal("openas", processes.StartInfo.Verb);
+        Assert.Empty(processes.StartInfo.Verb);
         Assert.Empty(processes.StartInfo.ArgumentList);
         Assert.Empty(processes.StartInfo.Arguments);
+    }
+
+    [Theory]
+    [InlineData(@"C:\source\plugin.log")]
+    [InlineData(@"C:\source\file.txt")]
+    [InlineData(@"C:\source\file.cs")]
+    [InlineData(@"C:\source\README")]
+    public void SuccessfulDefaultOpenDoesNotShowOpenWithDialog(string path)
+    {
+        var defaultOpener = new RecordingFileOpener();
+        var openWithDialog = new RecordingFileOpener();
+        var opener = new SafeFileOpener(defaultOpener, openWithDialog);
+
+        var outcome = opener.OpenSafe(path);
+
+        Assert.Equal(SafeFileOpenOutcome.Opened, outcome);
+        Assert.Equal(path, defaultOpener.OpenedPath);
+        Assert.Null(openWithDialog.OpenedPath);
+    }
+
+    [Fact]
+    public void MissingAssociationShowsOpenWithDialog()
+    {
+        var openWithDialog = new RecordingFileOpener();
+        var opener = new SafeFileOpener(
+            new ThrowingWin32FileOpener(1155),
+            openWithDialog);
+
+        var outcome = opener.OpenSafe(@"C:\source\unassociated-file.unknown");
+
+        Assert.Equal(SafeFileOpenOutcome.OpenWithShown, outcome);
+        Assert.Equal(@"C:\source\unassociated-file.unknown", openWithDialog.OpenedPath);
+    }
+
+    [Fact]
+    public void OpenWithDialogFailureIsNormalizedForResultActions()
+    {
+        const int failure = unchecked((int)0x80004005);
+        var nativeDialog = new StubOpenWithDialogNative(failure);
+        var opener = new OpenWithDialogFileOpener(nativeDialog);
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => opener.Open(@"C:\source\unassociated-file.unknown"));
+
+        Assert.Equal(@"C:\source\unassociated-file.unknown", nativeDialog.Path);
+        Assert.Contains("Open With", exception.Message);
+        Assert.NotNull(exception.InnerException);
+    }
+
+    [Fact]
+    public void OtherShellOpenErrorsAreNotMasked()
+    {
+        var openWithDialog = new RecordingFileOpener();
+        var opener = new SafeFileOpener(
+            new ThrowingWin32FileOpener(5),
+            openWithDialog);
+
+        var exception = Assert.Throws<Win32Exception>(
+            () => opener.OpenSafe(@"C:\source\plugin.log"));
+
+        Assert.Equal(5, exception.NativeErrorCode);
+        Assert.Null(openWithDialog.OpenedPath);
     }
 
     [Theory]
@@ -220,7 +289,36 @@ public sealed class FileOpenSafetyTests
         Assert.Null(host.ErrorMessage);
     }
 
-    private static MatchOpener CreateMatchOpener(IFileOpener fallback) =>
+    [Fact]
+    public void FailedOpenWithDialogIsReportedByResultActions()
+    {
+        const int failure = unchecked((int)0x80004005);
+        var match = CreateMatch(@"C:\source\unassociated-file.unknown");
+        var host = new RecordingHost();
+        var matchOpener = new MatchOpener(
+            new StubAssociationResolver(),
+            [new NeverAssociatedLauncher()],
+            new FileOpenSafetyPolicy(),
+            new NeverExecutableFileOpener(),
+            new RecordingFileOpener(),
+            new SafeFileOpener(
+                new ThrowingWin32FileOpener(1155),
+                new OpenWithDialogFileOpener(new StubOpenWithDialogNative(failure))));
+        var actions = new ResultActions(
+            host.Host,
+            new SafetyTextProvider(),
+            new PluginLog(Path.Combine(Path.GetTempPath(), "GrepFlow.Tests", Guid.NewGuid().ToString("N"))),
+            matchOpener,
+            new StubTerminalLauncher());
+
+        var result = actions.OpenMatch(match);
+
+        Assert.False(result);
+        Assert.Equal("GrepFlow", host.ErrorTitle);
+        Assert.Contains("Open With", host.ErrorMessage);
+    }
+
+    private static MatchOpener CreateMatchOpener(RecordingFileOpener fallback) =>
         new(
             new StubAssociationResolver(),
             [new NeverAssociatedLauncher()],
@@ -255,11 +353,33 @@ public sealed class FileOpenSafetyTests
         public bool TryLaunch(string executablePath, RipgrepMatch match) => false;
     }
 
-    private sealed class RecordingFileOpener : IFileOpener
+    private sealed class RecordingFileOpener : IFileOpener, ISafeFileOpener
     {
         public string? OpenedPath { get; private set; }
 
         public void Open(string path) => OpenedPath = path;
+
+        public SafeFileOpenOutcome OpenSafe(string path)
+        {
+            OpenedPath = path;
+            return SafeFileOpenOutcome.Opened;
+        }
+    }
+
+    private sealed class ThrowingWin32FileOpener(int errorCode) : IFileOpener
+    {
+        public void Open(string path) => throw new Win32Exception(errorCode);
+    }
+
+    private sealed class StubOpenWithDialogNative(int result) : IOpenWithDialogNative
+    {
+        public string? Path { get; private set; }
+
+        public int Show(string path)
+        {
+            Path = path;
+            return result;
+        }
     }
 
     private sealed class RecordingProcessStarter : IProcessStarter

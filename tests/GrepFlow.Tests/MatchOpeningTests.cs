@@ -135,7 +135,9 @@ public sealed class MatchOpeningTests
             new FileOpenSafetyPolicy(),
             new ExecutableFileOpener(processes),
             new NotepadFileOpener(processes),
-            new OpenWithFileOpener(processes));
+            new SafeFileOpener(
+                new ShellFileOpener(processes),
+                new RecordingFileOpener()));
 
         var outcome = opener.Open(CreateMatch(path, 20));
 
@@ -447,6 +449,18 @@ public sealed class MatchOpeningTests
     }
 
     [Fact]
+    public void OpenWithDialogOutcomeIsReturnedByMatchOpener()
+    {
+        var safeFiles = new RecordingFileOpener(SafeFileOpenOutcome.OpenWithShown);
+        var opener = CreateOpener(null, new StubAssociatedLauncher(), safeFiles);
+
+        var outcome = opener.Open(CreateMatch());
+
+        Assert.Equal(MatchOpenOutcome.OpenWithShown, outcome);
+        Assert.NotNull(safeFiles.OpenedPath);
+    }
+
+    [Fact]
     public void MissingSiblingCliUsesShellFallback()
     {
         var shell = new RecordingFileOpener();
@@ -564,11 +578,18 @@ public sealed class MatchOpeningTests
         }
     }
 
-    private sealed class RecordingFileOpener : IFileOpener
+    private sealed class RecordingFileOpener(
+        SafeFileOpenOutcome safeOutcome = SafeFileOpenOutcome.Opened) : IFileOpener, ISafeFileOpener
     {
         public string? OpenedPath { get; private set; }
 
         public void Open(string path) => OpenedPath = path;
+
+        public SafeFileOpenOutcome OpenSafe(string path)
+        {
+            OpenedPath = path;
+            return safeOutcome;
+        }
     }
 
     private sealed class RecordingExecutableFileOpener(bool succeeds = true) : IExecutableFileOpener
