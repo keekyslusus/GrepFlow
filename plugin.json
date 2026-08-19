@@ -1,0 +1,12 @@
+{
+  "ID": "1a6af486-416d-470b-86db-947fb4095588",
+  "ActionKeyword": "rg",
+  "Name": "GrepFlow",
+  "Description": "Search file contents with ripgrep in the folder you're already in",
+  "Author": "keekys",
+  "Version": "1.0.1",
+  "Language": "csharp",
+  "Website": "https://github.com/keekyslusus/GrepFlow",
+  "ExecuteFileName": "GrepFlow.dll",
+  "IcoPath": "Images\\app.png"
+}

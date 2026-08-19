@@ -1,0 +1,46 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="plugin_grepflow_plugin_name">GrepFlow</system:String>
+    <system:String x:Key="plugin_grepflow_plugin_description">Search file contents with ripgrep in the folder you're already in</system:String>
+    <system:String x:Key="plugin_grepflow_type_at_least_characters">Type at least {0} characters</system:String>
+    <system:String x:Key="plugin_grepflow_explorer_not_found">No active file manager folder found</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_not_found">ripgrep not found</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_install_hint">Download ripgrep from the official GitHub release</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_install_confirm_title">GrepFlow: install ripgrep</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_install_confirm_body" xml:space="preserve">Download ripgrep 15.2.0 from the official
+BurntSushi/ripgrep GitHub release?
+It will be installed for this plugin only.</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_installed">ripgrep installed successfully</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_install_failed">Failed to install ripgrep: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_unsupported_arch">Unsupported CPU architecture for ripgrep download: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_ripgrep_installing">Downloading ripgrep…</system:String>
+    <system:String x:Key="plugin_grepflow_matches">{0} matches</system:String>
+    <system:String x:Key="plugin_grepflow_duration">{0} ms</system:String>
+    <system:String x:Key="plugin_grepflow_nearest_window">nearest window</system:String>
+    <system:String x:Key="plugin_grepflow_subtitle_separator" xml:space="preserve"> | </system:String>
+    <system:String x:Key="plugin_grepflow_search_failed">Search failed: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_unsupported_search_option">Unsupported search option: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_missing_search_option_value">Search option requires a value: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_unexpected_search_path">Search paths are not supported: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_unterminated_search_quote">Unterminated quote in search options</system:String>
+    <system:String x:Key="plugin_grepflow_limit_notice">Showing first {0} matches</system:String>
+    <system:String x:Key="plugin_grepflow_limit_notice_hint">Refine the query to see the rest</system:String>
+    <system:String x:Key="plugin_grepflow_match_subtitle">{0} : {1}</system:String>
+    <system:String x:Key="plugin_grepflow_reveal_in_explorer">Reveal in Explorer</system:String>
+    <system:String x:Key="plugin_grepflow_open_terminal_here">Open terminal here</system:String>
+    <system:String x:Key="plugin_grepflow_open_terminal_failed">Failed to open a terminal in {0}: {1}</system:String>
+    <system:String x:Key="plugin_grepflow_blocked_file_open">GrepFlow will not execute matched files. The file was revealed in Explorer instead: {0}</system:String>
+    <system:String x:Key="plugin_grepflow_copy_full_path">Copy full path</system:String>
+    <system:String x:Key="plugin_grepflow_copy_matched_line">Copy matched line</system:String>
+    <system:String x:Key="plugin_grepflow_hint_glob_cs">only .cs: -- -g *.cs</system:String>
+    <system:String x:Key="plugin_grepflow_hint_type_cs">C# via type: -- -t cs</system:String>
+    <system:String x:Key="plugin_grepflow_hint_word">whole word: -- -w</system:String>
+    <system:String x:Key="plugin_grepflow_hint_fixed">plain text (no regex): -- -F</system:String>
+    <system:String x:Key="plugin_grepflow_hint_no_ignore">include .gitignored: -- --no-ignore</system:String>
+    <system:String x:Key="plugin_grepflow_hint_hidden">include hidden files: -- --hidden</system:String>
+    <system:String x:Key="plugin_grepflow_settings_show_hints">Show search tips</system:String>
+    <system:String x:Key="plugin_grepflow_settings_search_ignored_files">Search ignored files</system:String>
+    <system:String x:Key="plugin_grepflow_settings_search_hidden_files">Search hidden files and folders</system:String>
+</ResourceDictionary>
