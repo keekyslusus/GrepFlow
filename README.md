@@ -66,7 +66,8 @@ GrepFlow accepts only these search-scoping and matching options:
 - `-t`, `--type`, `-T`, `--type-not`
 - `--hidden`, `--no-ignore`
 
+If `rg` is not found, GrepFlow will offer to install it from the official [ripgrep repository](https://github.com/BurntSushi/ripgrep). It is installed at `...AppData\Roaming\FlowLauncher\Settings\Plugins\GrepFlow\rg\rg.exe`
 
 ### Installation
 
-Type `pm install GrepFlow by keekys` in Flow Launcher.
+Type `pm install GrepFlow by keekys` in Flow Launcher
